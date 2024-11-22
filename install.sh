@@ -114,11 +114,15 @@ install_sat(){
       echo "You chose to install via Terraform."
       # Add your Terraform installation logic here
       echo "Running Terraform script..."
+      cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
+      ls -la
       ;;
     2)
       echo "You chose to install via Terminal."
       # Add your terminal installation logic here
       echo "Running terminal installation commands..."
+      cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
+      ls -la
       ;;
     *)
       echo "Invalid choice. Please run the script again and select 1 or 2."
