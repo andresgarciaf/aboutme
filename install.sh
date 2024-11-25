@@ -84,8 +84,6 @@ setup_env(){
 
     # Create virtual environment
     if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
-        ls
-        cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
         echo "Creating virtual environment $INSTALLATION_DIR/$ENV_NAME..."
     else
         echo "Creating virtual environment ./$ENV_NAME..."
@@ -306,7 +304,7 @@ terraform_install(){
 
 shell_install(){
   echo "Running terminal installation..."
-
+  cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
