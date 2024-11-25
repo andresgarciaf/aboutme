@@ -413,6 +413,7 @@ main(){
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
         if setup_sat; then
+          ls
           cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
           install_sat || { echo "Failed to install SAT."; exit 1; }
         fi
