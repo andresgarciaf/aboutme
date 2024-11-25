@@ -84,6 +84,7 @@ setup_env(){
 
     # Create virtual environment
     if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+        ls
         cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
         echo "Creating virtual environment $INSTALLATION_DIR/$ENV_NAME..."
     else
