@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# curl -fsSL https://raw.githubusercontent.com/jgarciaf106/jgarciaf106/main/install.sh -o install.sh
+# sh install.sh
+
 clear
 
 # variables
@@ -302,7 +305,7 @@ terraform_install(){
 
 shell_install(){
   echo "Running terminal installation..."
-  ls
+
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
@@ -409,6 +412,7 @@ main(){
     if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
+        cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
         setup_sat || { echo "Failed to setup SAT."; exit 1; }
         install_sat || { echo "Failed to install SAT."; exit 1; }
     fi
