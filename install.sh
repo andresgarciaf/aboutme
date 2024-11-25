@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# curl -fsSL https://raw.githubusercontent.com/jgarciaf106/jgarciaf106/main/install.sh -o install.sh
-# sh install.sh
-
 clear
 
 # variables
@@ -83,7 +80,7 @@ setup_env(){
     fi
 
     # Create virtual environment
-    if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+    if [[ ! -d "docs" || ! -d "images" || -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
         cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
         echo "Creating virtual environment $INSTALLATION_DIR/$ENV_NAME..."
     else
@@ -421,3 +418,4 @@ main(){
 # ----------- Main Script -----------
 main || { echo "Failed to run the main script."; exit 1; }
 # ----------- Main Script -----------
+
