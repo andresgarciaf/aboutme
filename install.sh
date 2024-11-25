@@ -67,6 +67,7 @@ setup_sat() {
         rm -rf "$temp_dir"
     fi
 
+    cd "$INSTALLATION_DIR"
     rm "$file_path"
 }
 
@@ -412,10 +413,7 @@ main(){
     if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
-        setup_sat || { echo "Failed to setup SAT."; exit 1; }        
-        wait 3
-        cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
-        
+        setup_sat || { echo "Failed to setup SAT."; exit 1; }                
         install_sat || { echo "Failed to install SAT."; exit 1; }
     fi
     exit 0
