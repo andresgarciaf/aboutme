@@ -302,7 +302,7 @@ terraform_install(){
 
 shell_install(){
   echo "Running terminal installation..."
-
+  ls
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
