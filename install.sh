@@ -66,8 +66,6 @@ setup_sat() {
 
         rm -rf "$temp_dir"
     fi
-
-    cd "$INSTALLATION_DIR"
     rm "$file_path"
 }
 
