@@ -80,13 +80,13 @@ setup_env(){
     fi
 
     # Create virtual environment
-    if [[ ! -d "docs" || ! -d "images" || -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+    if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
         cd $INSTALLATION_DIR || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
         echo "Creating virtual environment $INSTALLATION_DIR/$ENV_NAME..."
     else
         echo "Creating virtual environment ./$ENV_NAME..."
     fi
-    
+
     if ! "$PYTHON_BIN" -m venv "$ENV_NAME"; then
         echo "Failed to create virtual environment. Ensure Python 3.11 or Python 3 is properly installed."
         exit 1
