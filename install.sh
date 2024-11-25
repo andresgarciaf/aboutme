@@ -277,7 +277,7 @@ terraform_actions() {
 terraform_install(){
   clear
   echo "Running Terraform installation..."
-  cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
+  cd "$INSTALLATION_DIR/terraform" || { echo "Failed to change directory to terraform"; exit 1; }
   options=("AWS" "Azure" "GCP" "Quit")
   echo "Please select an option:"
   select opt in "${options[@]}"
@@ -306,7 +306,7 @@ terraform_install(){
 shell_install(){
   echo "Running terminal installation..."
 
-  cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
+  cd "$INSTALLATION_DIR/dabs" || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
   echo "Installing SAT dependencies..."
@@ -412,11 +412,9 @@ main(){
     if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
-        if setup_sat; then
-          ls
-          cd "./$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
-          install_sat || { echo "Failed to install SAT."; exit 1; }
-        fi
+        setup_sat || { echo "Failed to setup SAT."; exit 1; }
+        install_sat || { echo "Failed to install SAT."; exit 1; }
+
     fi
     exit 0
 }
