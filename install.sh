@@ -16,6 +16,7 @@ DOWNLOAD_DIR="./"
 INSTALLATION_DIR="sat-installer"
 PYTHON_BIN="python3.11"
 ENV_NAME=".env"
+ENTRY_POINT="install.sh"
 
 # Functions
 running_mode() {
@@ -90,10 +91,11 @@ setup_sat() {
 
         rm -rf "$temp_dir"
     fi
-    
-    mv install.sh "$INSTALLATION_DIR"/
 
     rm "$file_path"
+    
+    mv "$ENTRY_POINT" "$INSTALLATION_DIR"/
+  
 }
 
 setup_env(){
