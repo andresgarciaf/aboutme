@@ -514,6 +514,7 @@ terraform_install(){
 
 shell_install(){
   clear
+  echo "Andres"
   ls 
   sleep 10
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
