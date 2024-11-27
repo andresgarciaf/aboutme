@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# curl -fsSL https://raw.githubusercontent.com/jgarciaf106/jgarciaf106/main/install.sh -o install.sh
-# sh install.sh
+# sh <(curl -fsSL https://raw.githubusercontent.com/jgarciaf106/jgarciaf106/main/install.sh)
 
 # TUI settings
 COLUMNS=12
@@ -16,15 +15,12 @@ DOWNLOAD_DIR="./"
 INSTALLATION_DIR="sat-installer"
 PYTHON_BIN="python3.11"
 ENV_NAME=".env"
-ENTRY_POINT="install.sh"
 
 # Functions
 running_mode() {
   if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
     RUNNING_MODE="local"
   fi
-  echo "Running mode: $RUNNING_MODE"
-  sleep 10
 }
 
 find_install(){
@@ -63,12 +59,7 @@ setup_sat() {
     echo "Downloading the latest release of SAT..."
     local file_path
     file_path=$(download_latest_release)
-
-    if ls "$DOWNLOAD_DIR"/$INSTALLATION_DIR* 1>/dev/null 2>&1; then
-        # shellcheck disable=SC2115
-        rm -rf "$DOWNLOAD_DIR/$INSTALLATION_DIR"
-    fi
-
+    
     mkdir -p "$INSTALLATION_DIR"
 
     if [[ "$file_path" == *.zip ]]; then
@@ -85,18 +76,24 @@ setup_sat() {
                     cp -r "$solution_dir/$folder" "$INSTALLATION_DIR"
                 fi
             done
+
+            install_file=$(find "$solution_dir" -type f -name "install.sh")
+            if [[ -f "$install_file" ]]; then
+                echo "Downloading install.sh..."
+                cp "$install_file" "$INSTALLATION_DIR"
+            else
+                echo "Warning: install.sh not found in the release."
+            fi
         else
             echo "Error: No 'databricks-industry-solutions' folder found in the extracted contents."
             rm -rf "$temp_dir"
+            exit 1
         fi
 
         rm -rf "$temp_dir"
     fi
 
     rm "$file_path"
-
-    mv "$ENTRY_POINT" "$INSTALLATION_DIR"/
-
 }
 
 setup_env(){
