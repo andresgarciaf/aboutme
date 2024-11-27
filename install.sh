@@ -9,7 +9,8 @@ COLUMNS=12
 clear
 
 # variables
-RUNNING_MODE=""
+RUNNING_MODE="remote"
+SAT_INSTALLED=0
 REPO="databricks-industry-solutions/security-analysis-tool"
 DOWNLOAD_DIR="./"
 INSTALLATION_DIR="sat-installer"
@@ -20,10 +21,20 @@ ENV_NAME=".env"
 running_mode() {
   if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
     RUNNING_MODE="local"
-  else
-    RUNNING_MODE="remote"
   fi
 }
+
+find_install(){
+  
+  if [[ "$RUNNING_MODE" == "remote" ]]; then
+    cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
+  fi
+  
+  if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
+    SAT_INSTALLED=1
+  fi
+}
+
 download_latest_release() {
     local release_info file_name file_path
 
@@ -583,24 +594,15 @@ uninstall() {
 
 install_sat(){
   clear
-
-  local uninstall_available=0
-
-  if [[ "$RUNNING_MODE" == "remote" ]]; then
-    cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
-  fi
-
-  if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
-    uninstall_available=1
-  fi
-
+  find_install
+  
   options=("Terraform" "CLI")
   echo "==============================="
   echo "How do you want to install SAT?"
   echo "==============================="
   echo
 
-  if [[ $uninstall_available -eq 1 ]]; then
+  if [[ $SAT_INSTALLED -eq 1 ]]; then
     options=("Terraform" "CLI" "Uninstall")
   fi
 
@@ -616,7 +618,7 @@ install_sat(){
         break
         ;;
       "Uninstall")
-        if [[ $uninstall_available -eq 1 ]]; then
+        if [[ $SAT_INSTALLED -eq 1 ]]; then
           uninstall || { echo "Failed to uninstall SAT."; exit 1; }
         else
           echo "Uninstall option is not available."
@@ -632,7 +634,7 @@ install_sat(){
 
 main(){
     running_mode
-    echo "Running mode: $RUNNING_MODE"
+
     if [[ "$RUNNING_MODE" == "local" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
