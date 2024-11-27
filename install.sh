@@ -90,6 +90,8 @@ setup_sat() {
 
         rm -rf "$temp_dir"
     fi
+    
+    mv install.sh "$INSTALLATION_DIR"/
 
     rm "$file_path"
 }
