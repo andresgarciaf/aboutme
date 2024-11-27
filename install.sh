@@ -3,6 +3,9 @@
 # curl -fsSL https://raw.githubusercontent.com/jgarciaf106/jgarciaf106/main/install.sh -o install.sh
 # sh install.sh
 
+# TUI settings
+COLUMNS=12
+
 clear
 
 # variables
@@ -61,7 +64,6 @@ setup_sat() {
         else
             echo "Error: No 'databricks-industry-solutions' folder found in the extracted contents."
             rm -rf "$temp_dir"
-            return 1
         fi
 
         rm -rf "$temp_dir"
@@ -140,7 +142,8 @@ validate_guid() {
 }
 
 validate_client_secret() {
-  [[ "${#1}" -eq 40 ]]
+  [[ "${#1}" -eq 40 ]] || \
+  [[ "${#1}" -eq 36 && "$1" == *dose* ]]
 }
 
 validate_databricks_url() {
@@ -149,9 +152,95 @@ validate_databricks_url() {
        "$1" =~ ^https://.*\.gcp\.databricks\.com(/.*)?$ ]]
 }
 
+validate_gcp_sa() {
+ [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.iam\.gserviceaccount\.com$ ]]
+}
+
+validate_gcp_json_path() {
+ [[ -f "$1" && "$1" == *.json ]]
+}
+
+# Prompt user for AWS inputs and validate
+# shellcheck disable=SC2162
+aws_validation() {
+  local DATABRICKS_ACCOUNT_ID
+  local DATABRICKS_CLIENT_ID
+  local DATABRICKS_CLIENT_SECRET
+  local DATABRICKS_URL
+  local DATABRICKS_WORKSPACE_ID
+  local ANALYSIS_SCHEMA_NAME
+  local AWS_PROXIES
+
+  clear
+
+  cd aws || { echo "Failed to change directory to aws"; exit 1; }
+
+  echo "================================================================="
+  echo "Setting up AWS environment, Please provide the following details:"
+  echo "================================================================="
+  echo
+
+  # Prompt user and validate inputs
+   read -p "Enter Databricks Account ID: " DATABRICKS_ACCOUNT_ID
+  while ! validate_guid "$DATABRICKS_ACCOUNT_ID"; do
+    echo "Invalid Databricks Account ID."
+    read -p "Enter Databricks Account ID: " DATABRICKS_ACCOUNT_ID
+  done
+
+  read -p "Enter Databricks Client ID: " DATABRICKS_CLIENT_ID
+  while ! validate_guid "$DATABRICKS_CLIENT_ID"; do
+    echo "Invalid Client ID."
+    read -p "Enter Databricks Client ID: " DATABRICKS_CLIENT_ID
+  done
+
+  read -sp "Enter Databricks Client Secret: " DATABRICKS_CLIENT_SECRET
+  while ! validate_client_secret "$DATABRICKS_CLIENT_SECRET"; do
+    printf "\nInvalid Client Secret.\n"
+    read -sp "Enter Databricks Client Secret: " DATABRICKS_CLIENT_SECRET
+  done
+  printf "\n"
+
+  read -p "Enter Databricks URL: " DATABRICKS_URL
+  while ! validate_databricks_url "$DATABRICKS_URL"; do
+    echo "Invalid Databricks URL."
+    read -p "Enter Databricks URL: " DATABRICKS_URL
+  done
+
+  read -p "Enter AWS Workspace ID: " DATABRICKS_WORKSPACE_ID
+  while ! validate_workspace_id "$DATABRICKS_WORKSPACE_ID"; do
+    echo "Invalid Workspace ID."
+    read -p "Enter AWS Workspace ID: " DATABRICKS_WORKSPACE_ID
+  done
+
+  read -p "Enter Analysis Schema Name (e.g., 'catalog.schema' or 'hive_metastore.schema'): " ANALYSIS_SCHEMA_NAME
+  while ! validate_analysis_schema_name "$ANALYSIS_SCHEMA_NAME"; do
+      echo "Invalid Analysis Schema Name. It must be either 'catalog.schema' or 'hive_metastore.schema'."
+      read -p "Enter Analysis Schema Name (e.g.,'catalog.schema' or 'hive_metastore.schema'): " ANALYSIS_SCHEMA_NAME
+  done
+
+  read -p "Enter Proxy Details ({} or JSON with 'http' and 'https' keys): " AWS_PROXIES
+  while ! validate_proxies "$AWS_PROXIES"; do
+    echo "Invalid Proxy format. Use '{}' or a valid JSON format like:"
+    echo '{ "http": "http://proxy.example.com:8080", "https": "http://proxy.example.com:8080" }'
+    read -p "Enter Proxy Details ({} or JSON with 'http' and 'https' keys): " AWS_PROXIES
+  done
+
+  # Set variables for AWS arguments
+  AWS_VAR_ARGS=(
+    "client_id=$DATABRICKS_CLIENT_ID"
+    "client_secret=$DATABRICKS_CLIENT_SECRET"
+    "account_console_id=$DATABRICKS_ACCOUNT_ID"
+    "databricks_url=$DATABRICKS_URL"
+    "workspace_id=$DATABRICKS_WORKSPACE_ID"
+    "analysis_schema_name=$ANALYSIS_SCHEMA_NAME"
+    "proxies=$AWS_PROXIES"
+  )
+
+  update_tfvars "${AWS_VAR_ARGS[@]}"
+}
+
 # Prompt user for Azure inputs and validate
-#azure_validation() {}
-#gcp_validation() {}
+# shellcheck disable=SC2162
 azure_validation() {
   local AZURE_SUBSCRIPTION_ID
   local AZURE_TENANT_ID
@@ -167,9 +256,9 @@ azure_validation() {
 
   cd azure || { echo "Failed to change directory to azure"; exit 1; }
 
-  echo "-------------------------------------------------------------------"
+  echo "==================================================================="
   echo "Setting up Azure environment, Please provide the following details:"
-  echo "-------------------------------------------------------------------"
+  echo "==================================================================="
   echo
 
   # Prompt user and validate inputs
@@ -193,9 +282,10 @@ azure_validation() {
 
   read -sp "Enter Azure Client Secret: " AZURE_CLIENT_SECRET
   while ! validate_client_secret "$AZURE_CLIENT_SECRET"; do
-    echo "Invalid Client Secret."
-    read -sp "Enter Azure Client Secret: " AZURE_CLIENT_SECRET
+    printf "\nInvalid Client Secret.\n"
+    read -p "Enter Azure Client Secret: " AZURE_CLIENT_SECRET
   done
+  printf "\n"
 
   read -p "Enter Databricks Account ID: " DATABRICKS_ACCOUNT_ID
   while ! validate_guid "$DATABRICKS_ACCOUNT_ID"; do
@@ -244,8 +334,105 @@ azure_validation() {
   update_tfvars "${AZURE_VAR_ARGS[@]}"
 }
 
+# Prompt user for GCP inputs and validate
+# shellcheck disable=SC2162
+gcp_validation() {
+  local DATABRICKS_ACCOUNT_ID
+  local DATABRICKS_CLIENT_ID
+  local DATABRICKS_CLIENT_SECRET
+  local DATABRICKS_URL
+  local DATABRICKS_WORKSPACE_ID
+  local ANALYSIS_SCHEMA_NAME
+  local GCP_PATH_TO_JSON
+  local GCP_IMPERSONATE_SA
+  local GCP_PROXIES
+
+  clear
+
+  cd gcp || { echo "Failed to change directory to gcp"; exit 1; }
+
+  echo "================================================================="
+  echo "Setting up GCP environment, Please provide the following details:"
+  echo "================================================================="
+  echo
+
+  # Prompt user and validate inputs
+  read -p "Enter Databricks Account ID: " DATABRICKS_ACCOUNT_ID
+  while ! validate_guid "$DATABRICKS_ACCOUNT_ID"; do
+    echo "Invalid Databricks Account ID."
+    read -p "Enter Databricks Account ID: " DATABRICKS_ACCOUNT_ID
+  done
+
+  read -p "Enter Databricks Client ID: " DATABRICKS_CLIENT_ID
+  while ! validate_guid "$DATABRICKS_CLIENT_ID"; do
+    echo "Invalid Client ID."
+    read -p "Enter Databricks Client ID: " DATABRICKS_CLIENT_ID
+  done
+
+  read -sp "Enter Databricks Client Secret: " DATABRICKS_CLIENT_SECRET
+  while ! validate_client_secret "$DATABRICKS_CLIENT_SECRET"; do
+    printf "\nInvalid Client Secret.\n"
+    read -p "Enter Databricks Client Secret: " DATABRICKS_CLIENT_SECRET
+  done
+  printf "\n"
+
+  read -p "Enter Databricks URL: " DATABRICKS_URL
+  while ! validate_databricks_url "$DATABRICKS_URL"; do
+    echo "Invalid Databricks URL."
+    read -p "Enter Databricks URL: " DATABRICKS_URL
+  done
+
+  read -p "Enter GCP Workspace ID: " DATABRICKS_WORKSPACE_ID
+  while ! validate_workspace_id "$DATABRICKS_WORKSPACE_ID"; do
+    echo "Invalid Workspace ID."
+    read -p "Enter GCP Workspace ID: " DATABRICKS_WORKSPACE_ID
+  done
+
+  read -p "Enter Analysis Schema Name (e.g., 'catalog.schema' or 'hive_metastore.schema'): " ANALYSIS_SCHEMA_NAME
+  while ! validate_analysis_schema_name "$ANALYSIS_SCHEMA_NAME"; do
+      echo "Invalid Analysis Schema Name. It must be either 'catalog.schema' or 'hive_metastore.schema'."
+      read -p "Enter Analysis Schema Name (e.g.,'catalog.schema' or 'hive_metastore.schema'): " ANALYSIS_SCHEMA_NAME
+  done
+
+  read -p "Enter GCP Key json path: " GCP_PATH_TO_JSON
+  while ! validate_gcp_json_path "$GCP_PATH_TO_JSON"; do
+    echo "Invalid Path."
+    read -p "Enter GCP Key json path: " GCP_PATH_TO_JSON
+  done
+
+  read -p "Enter GCP Impersonate Service Account: " GCP_IMPERSONATE_SA
+  while ! validate_gcp_sa "$GCP_IMPERSONATE_SA"; do
+    echo "Invalid Service Account."
+    read -p "Enter GCP Impersonate Service Account: " GCP_IMPERSONATE_SA
+  done
+
+  read -p "Enter Proxy Details ({} or JSON with 'http' and 'https' keys): " AWS_PROXIES
+  while ! validate_proxies "$AWS_PROXIES"; do
+    echo "Invalid Proxy format. Use '{}' or a valid JSON format like:"
+    echo '{ "http": "http://proxy.example.com:8080", "https": "http://proxy.example.com:8080" }'
+    read -p "Enter Proxy Details ({} or JSON with 'http' and 'https' keys): " AWS_PROXIES
+  done
+
+  # Set variables for GCP arguments
+  GCP_VAR_ARGS=(
+    "client_id=$DATABRICKS_CLIENT_ID"
+    "client_secret=$DATABRICKS_CLIENT_SECRET"
+    "account_console_id=$DATABRICKS_ACCOUNT_ID"
+    "databricks_url=$DATABRICKS_URL"
+    "workspace_id=$DATABRICKS_WORKSPACE_ID"
+    "analysis_schema_name=$ANALYSIS_SCHEMA_NAME"
+    "gs_path_to_json=$GCP_PATH_TO_JSON"
+    "impersonate_service_account=$GCP_IMPERSONATE_SA"
+    "proxies=$GCP_PROXIES"
+  )
+
+  update_tfvars "${GCP_VAR_ARGS[@]}"
+}
+
 # shellcheck disable=SC2120
 terraform_actions() {
+  clear
+
   PLAN_FILE="tfplan"
   COMMON_ARGS=(
       -no-color
@@ -275,14 +462,16 @@ terraform_actions() {
 
 terraform_install(){
   clear
-  echo "Running Terraform installation..."
   if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
     cd "$INSTALLATION_DIR/terraform" || { echo "Failed to change directory to terraform"; exit 1; }
   else
     cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
   fi
   options=("AWS" "Azure" "GCP" "Quit")
-  echo "Please select an option:"
+  echo "========================="
+  echo "Please select your cloud:"
+  echo "========================="
+  echo
   select opt in "${options[@]}"
   do
     case $opt in
@@ -307,7 +496,7 @@ terraform_install(){
 }
 
 shell_install(){
-  echo "Running terminal installation..."
+  clear
   if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
     cd "$INSTALLATION_DIR/dabs" || { echo "Failed to change directory to dabs"; exit 1; }
   else
@@ -321,7 +510,7 @@ shell_install(){
 }
 
 uninstall() {
-  local tfplan_path databricks_path
+  local tfplan_path bundle_path
 
   # Find a file named "tfplan" and get its root directory
   tfplan_path=$(find . -type f -name "tfplan" -exec dirname {} \; | head -n 1)
@@ -329,48 +518,63 @@ uninstall() {
   if [[ -n "$tfplan_path" ]]; then
     # If a tfplan file is found
     cd "$tfplan_path" || { echo "Failed to change directory to $tfplan_path"; exit 1; }
+    clear
     echo "Uninstalling Terraform resources..."
     terraform destroy -auto-approve -lock=false || { echo "Failed to destroy the Terraform resources."; exit 1; }
-    return
+
+    # Remove Terraform files
+    terraform_files=(
+      ".terraform"
+      ".terraform.lock.hcl"
+      "terraform.tfstate"
+      "terraform.tfstate.backup"
+      "terraform.tfvars"
+      "crash.log"
+      ".terraform.rc"
+      "terraform.rc"
+      "tfplan"
+    )
+    for item in "${terraform_files[@]}"; do
+      rm -rf "$item"
+    done
   fi
 
   # If no tfplan file is found, search for a folder named ".databricks"
-  databricks_path=$(find . -type d -name ".databricks" | head -n 1)
+  bundle_path=$(find . -type d -name ".databricks" | head -n 1)
 
-  if [[ -n "$databricks_path" ]]; then
+  if [[ -n "$bundle_path" ]]; then
     # If a .databricks folder is found
-    cd "$databricks_path" || { echo "Failed to change directory to $databricks_path"; exit 1; }
-    echo "Uninstalling Databricks resources..."
 
-    command_output=$(databricks auth profiles)
-    name_list=$(echo "$command_output" | awk '{print $1}' | tail -n +2)
+    # shellcheck disable=SC2015
+    cd "$bundle_path" && cd .. || { echo "Failed to change directory to $bundle_path"; exit 1; }
 
-    echo "Select an option:"
-    options=()
-    i=1
-    while read -r name; do
-      options+=("$name")
-      echo "$i) $name"
-      ((i++))
-    done <<< "$name_list"
+    # shellcheck disable=SC2207
+    options=($(databricks auth profiles | awk 'NR > 1 {print $1}'))
 
-    read -r -p "Select the Profile used to installed SAT: " choice
+    echo "========================================"
+    echo "Select the Profile used to installed SAT"
+    echo "========================================"
+    echo
 
-    # Validate and process the selection
-    if [[ "$choice" -gt 0 && "$choice" -le "${#options[@]}" ]]; then
-      selected_name="${options[$((choice - 1))]}"
-    else
-      echo "Invalid selection. Please run the script again."
-    fi
-
-    databricks bundle destroy --auto-approve --force-lock -p $selected_name || { echo "Failed to destroy the Databricks resources."; exit 1; }
-    cd ../
-    rm -rf tmp .env
-    return
+    select opt in "${options[@]}"
+    do
+      if [[ -n "$opt" ]]; then
+        selected_name="$opt"
+        clear
+        echo "Uninstalling Databricks resources"
+        databricks bundle destroy --auto-approve --force-lock -p "$selected_name" || {
+          echo "Failed to destroy the Databricks resources."
+          exit 1
+        }
+        cd ../ && rm -rf tmp .env
+        break
+      else
+        echo "Invalid option. Select an option from 1 to ${#options[@]}."
+      fi
+    done
   fi
 
-  # If neither is found
-  echo "No tfplan file or .databricks folder found."
+  echo "SAT successfully uninstalled."
 }
 
 install_sat(){
@@ -378,39 +582,44 @@ install_sat(){
 
   local uninstall_available=0
 
-  # Check uninstall
   if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
     uninstall_available=1
   fi
 
-  echo "--------------------------------"
+  options=("Terraform" "CLI")
+  echo "==============================="
   echo "How do you want to install SAT?"
-  echo "1) Via Terraform"
-  echo "2) Via Terminal"
-  if [[ $uninstall_available -eq 1 ]]; then
-    echo "3) Uninstall"
-  fi
-  echo "--------------------------------"
-  read -r -p "Please enter 1 or 2: " choice
-  case $choice in
-    1)
-      terraform_install || { echo "Failed to install SAT via Terraform."; exit 1; }
-      ;;
-    2)
-      shell_install || { echo "Failed to install SAT via Terminal."; exit 1; }
-      ;;
-    3)
-      if [[ $uninstall_available -eq 1 ]]; then
-        uninstall || { echo "Failed to uninstall SAT."; exit 1; }
-      else
-        echo "Uninstall option is not available."
-      fi
-      ;;
-    *)
-      echo "Invalid choice. Please run the script again and select 1 or 2."
-      ;;
-  esac
+  echo "==============================="
+  echo
 
+  if [[ $uninstall_available -eq 1 ]]; then
+    options=("Terraform" "CLI" "Uninstall")
+  fi
+
+  select opt in "${options[@]}"
+  do
+    case $opt in
+      "Terraform")
+        terraform_install || { echo "Failed to install SAT via Terraform."; exit 1; }
+        break
+        ;;
+      "CLI")
+        shell_install || { echo "Failed to install SAT via Terminal."; exit 1; }
+        break
+        ;;
+      "Uninstall")
+        if [[ $uninstall_available -eq 1 ]]; then
+          uninstall || { echo "Failed to uninstall SAT."; exit 1; }
+        else
+          echo "Uninstall option is not available."
+        fi
+        break
+        ;;
+      *)
+        echo "Invalid option."
+        ;;
+    esac
+  done
 }
 
 main(){
@@ -419,11 +628,9 @@ main(){
     else
         setup_sat || { echo "Failed to setup SAT."; exit 1; }
         install_sat || { echo "Failed to install SAT."; exit 1; }
-
     fi
     exit 0
 }
 
-# ----------- Main Script -----------
-main || { echo "Failed to run the main script."; exit 1; }
-# ----------- Main Script -----------
+# run script
+main
