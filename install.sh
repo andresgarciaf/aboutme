@@ -25,14 +25,16 @@ running_mode() {
 }
 
 find_install(){
-  
   if [[ "$RUNNING_MODE" == "remote" ]]; then
     cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
   fi
-  
+
   if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
     SAT_INSTALLED=1
+  else
+    setup_sat
   fi
+  
 }
 
 download_latest_release() {
@@ -477,11 +479,8 @@ terraform_actions() {
 
 terraform_install(){
   clear
-  if [[ "$RUNNING_MODE" == "remote" ]]; then
-    cd "$INSTALLATION_DIR/terraform" || { echo "Failed to change directory to terraform"; exit 1; }
-  else
-    cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
-  fi
+
+  cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
   options=("AWS" "Azure" "GCP" "Quit")
   echo "========================="
   echo "Please select your cloud:"
@@ -512,6 +511,7 @@ terraform_install(){
 
 shell_install(){
   clear
+
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
@@ -591,7 +591,7 @@ uninstall() {
 install_sat(){
   clear
   find_install
-  
+
   options=("Terraform" "CLI")
   echo "==============================="
   echo "How do you want to install SAT?"
@@ -634,7 +634,7 @@ main(){
     if [[ "$RUNNING_MODE" == "local" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
-        setup_sat || { echo "Failed to setup SAT."; exit 1; }
+        find_install || { echo "Failed to setup SAT."; exit 1; }
         install_sat || { echo "Failed to install SAT."; exit 1; }
     fi
     exit 0
