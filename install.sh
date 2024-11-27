@@ -512,11 +512,7 @@ terraform_install(){
 
 shell_install(){
   clear
-  if [[ "$RUNNING_MODE" == "remote" ]]; then
-    cd "$INSTALLATION_DIR/dabs" || { echo "Failed to change directory to dabs"; exit 1; }
-  else
-    cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
-  fi
+  cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
   echo "Installing SAT dependencies..."
