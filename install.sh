@@ -23,11 +23,13 @@ running_mode() {
   if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
     RUNNING_MODE="local"
   fi
+  echo "Running mode: $RUNNING_MODE"
+  sleep 10
 }
 
 find_install(){
   if [[ "$RUNNING_MODE" == "remote" ]]; then
-    if [[ ! -d config || ! -d dabs || ! -d dashboards || ! -d notebooks || ! -d src || -d terraform ]]; then
+    if [[ ! -d "config" && ! -d "dabs" && ! -d "dashboards" && ! -d "notebooks" && ! -d "src" && ! -d "terraform" ]]; then
       setup_sat
     fi
   fi
