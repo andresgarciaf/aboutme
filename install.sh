@@ -59,7 +59,7 @@ setup_sat() {
     echo "Downloading the latest release of SAT..."
     local file_path
     file_path=$(download_latest_release)
-    
+
     mkdir -p "$INSTALLATION_DIR"
 
     if [[ "$file_path" == *.zip ]]; then
@@ -516,6 +516,9 @@ shell_install(){
   clear
 
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
+  
+  ls 
+  sleep 10
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
   echo "Installing SAT dependencies..."
