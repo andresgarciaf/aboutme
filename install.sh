@@ -9,6 +9,7 @@ COLUMNS=12
 clear
 
 # variables
+RUNNING_MODE=""
 REPO="databricks-industry-solutions/security-analysis-tool"
 DOWNLOAD_DIR="./"
 INSTALLATION_DIR="sat-installer"
@@ -16,6 +17,13 @@ PYTHON_BIN="python3.11"
 ENV_NAME=".env"
 
 # Functions
+running_mode() {
+  if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+    RUNNING_MODE="local"
+  else
+    RUNNING_MODE="remote"
+  fi
+}
 download_latest_release() {
     local release_info file_name file_path
 
@@ -85,11 +93,7 @@ setup_env(){
     fi
 
     # Create virtual environment
-    if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
-        echo "Creating virtual environment $ENV_NAME..."
-    else
-        echo "Creating virtual environment $ENV_NAME..."
-    fi
+    echo "Creating virtual environment $ENV_NAME..."
 
     if ! "$PYTHON_BIN" -m venv "$ENV_NAME"; then
         echo "Failed to create virtual environment. Ensure Python 3.11 or Python 3 is properly installed."
@@ -462,7 +466,7 @@ terraform_actions() {
 
 terraform_install(){
   clear
-  if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+  if [[ "$RUNNING_MODE" == "remote" ]]; then
     cd "$INSTALLATION_DIR/terraform" || { echo "Failed to change directory to terraform"; exit 1; }
   else
     cd terraform || { echo "Failed to change directory to terraform"; exit 1; }
@@ -497,7 +501,7 @@ terraform_install(){
 
 shell_install(){
   clear
-  if [[ ! -d "docs" && ! -d "images" && -z "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+  if [[ "$RUNNING_MODE" == "remote" ]]; then
     cd "$INSTALLATION_DIR/dabs" || { echo "Failed to change directory to dabs"; exit 1; }
   else
     cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
@@ -582,7 +586,7 @@ install_sat(){
 
   local uninstall_available=0
 
-  if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+  if [[ "$RUNNING_MODE" == "remote" ]]; then
     cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
   fi
 
@@ -627,7 +631,9 @@ install_sat(){
 }
 
 main(){
-    if [[ -d "docs" || -d "images" || -n "$(find . -maxdepth 1 -name '*.md' -o -name 'LICENSE' -o -name 'NOTICE')" ]]; then
+    running_mode
+    echo "Running mode: $RUNNING_MODE"
+    if [[ "$RUNNING_MODE" == "local" ]]; then
         install_sat || { echo "Failed to install SAT."; exit 1; }
     else
         setup_sat || { echo "Failed to setup SAT."; exit 1; }
