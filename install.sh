@@ -591,7 +591,6 @@ uninstall() {
 
 install_sat(){
   clear
-  find_install
 
   options=("Terraform" "CLI")
   echo "==============================="
