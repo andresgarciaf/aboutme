@@ -27,10 +27,9 @@ running_mode() {
 
 find_install(){
   if [[ "$RUNNING_MODE" == "remote" ]]; then
-    if [[ ! -d "$INSTALLATION_DIR" ]]; then
+    if [[ ! -d config || ! -d dabs || ! -d dashboards || ! -d notebooks || ! -d src || -d terraform ]]; then
       setup_sat
     fi
-    cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
   fi
 
   if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
@@ -93,9 +92,9 @@ setup_sat() {
     fi
 
     rm "$file_path"
-    
+
     mv "$ENTRY_POINT" "$INSTALLATION_DIR"/
-  
+
 }
 
 setup_env(){
