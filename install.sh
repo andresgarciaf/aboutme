@@ -514,11 +514,11 @@ terraform_install(){
 
 shell_install(){
   clear
-
-  cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
-  
   ls 
   sleep 10
+  cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
+  
+  
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
   echo "Installing SAT dependencies..."
