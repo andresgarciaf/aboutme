@@ -27,6 +27,7 @@ find_install(){
   if [[ "$RUNNING_MODE" == "remote" ]]; then
     if [[ ! -d "config" && ! -d "dabs" && ! -d "dashboards" && ! -d "notebooks" && ! -d "src" && ! -d "terraform" ]]; then
       setup_sat
+      cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
     fi
   fi
 
@@ -514,12 +515,8 @@ terraform_install(){
 
 shell_install(){
   clear
-  echo "Andres"
-  ls 
-  sleep 10
+
   cd dabs || { echo "Failed to change directory to dabs"; exit 1; }
-  
-  
   setup_env || { echo "Failed to setup virtual environment."; exit 1; }
 
   echo "Installing SAT dependencies..."
