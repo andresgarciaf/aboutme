@@ -26,15 +26,16 @@ running_mode() {
 
 find_install(){
   if [[ "$RUNNING_MODE" == "remote" ]]; then
+    if [[ ! -d "$INSTALLATION_DIR" ]]; then
+      setup_sat
+    fi
     cd "$INSTALLATION_DIR" || { echo "Failed to change directory to $INSTALLATION_DIR"; exit 1; }
   fi
 
   if [[ -n $(find . -type f -name "tfplan" | head -n 1) || -n $(find . -type d -name ".databricks" | head -n 1) ]]; then
     SAT_INSTALLED=1
-  else
-    setup_sat
   fi
-  
+
 }
 
 download_latest_release() {
